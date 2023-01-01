@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@db/*": ["db/*"],
+      "@httpsClient": ["src/httpsClient/index"],
+      "@APIs": ["src/Platforms/index"]
+    },
+    "baseUrl": ".",
+    // Основные настройки.
+    "module": "CommonJS",                 // Определяет тип импорта кода в итоговом файле
+    "moduleResolution": "Node",
+    "outDir": "build",                   // Поместить все скомпилированные файлы в данную папку
+    "alwaysStrict": true,                // Компилировать ли каждый файл в строгом режиме и создавать ли 'use strict'
+    "sourceMap": false,                  // Создавать ли соответствующие source map файлы ".map"?
+    "target": "ESNext",                  // Тип кода создаваемого итогового файла.
+
+    // Дополнительные настройки.
+    "declaration": false,                // Создать ли ".d.ts" файлы
+    "esModuleInterop": true,             // Создать хелперы __importStar и __importDefault для обеспечения совместимости с экосистемой Babel и включить allowSyntheticDefaultImports для совместимости с системой типов.
+    "listEmittedFiles": true,            // Печатать список всех выходных файлов при компиляции. Требуется TypeScript версии 2.0 или новее.
+    "skipLibCheck": true,                // Не проверять типы, заданные во всех файлах описания типов (*.d.ts)?
+    "traceResolution": false,            // Выводить в логи сообщения о нахождении путей до модулей.
+    "resolveJsonModule": true,           // Не проверять Json файлы
+    "removeComments": true,              // Удалить все комментарии из итогового файла.
+    "noEmitHelpers": false,              // Отключить создание пользовательских вспомогательных функций, таких как `__extends` в скомпилированном выводе
+
+    // Вспомогательные настройки.
+    "noFallthroughCasesInSwitch": true,  // Сообщить об ошибке в случае обнаружения проваливания в конструкции switch-case?
+    "noImplicitReturns": false,          // Сообщить об ошибке, когда не все пути кода в функции возвращают значение?
+    "strictNullChecks": false,           // Значения "null" и "undefined" могут быть присвоены только значениям данного типа
+    "allowUnreachableCode": true,        // Сообщить об ошибке в случае обнаружения кода, который никогда не будет выполнен?
+    "noImplicitThis": true,              // Показывать ошибку на "this", если где-то задан тип "any".
+    "importHelpers": true,              // Имортировать созданные хелперы (__extends, __rest и так далее) из "tslib".
+    "noImplicitAny": true                // Запрет на использование any
+  },
+  "exclude": [                           // Секция "exclude" позволяет исключить при компиляции определенные файлы
+    "node_modules", "build"
+  ],
+  "include": ["tsconfig.json", "src", "db"]
+}
