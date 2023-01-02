@@ -57,12 +57,14 @@ const runDWL = async (err: Error, str: any) => {
     const videos = VideoQuality !== "OnlyAudio" ? video.format.filter((format: YouTubeFormat) => format.qualityLabel === `${VideoQuality}60` || format.qualityLabel === VideoQuality) : [];
     const FFmpegFormats: string[] = [];
 
-    if (videos.length > 0) FFmpegFormats.push(videos[0].url);
+    if (videos.length < 1 && VideoQuality !== "OnlyAudio") return Error("Такого формата видео нет");
+    else FFmpegFormats.push(videos[0].url);
+    
     if (audios.length > 0) FFmpegFormats.push(audios[0].url);
     //
     
     let isDownload = false;
-    const VideoTitle = video.title.replace(/[\[,\]}{"`'|]/gi, "");
+    const VideoTitle = video.title.replace(/[\[,\]}{"`'|*]/gi, "");
 
     const ffmpeg = Decoding(FFmpegFormats, `${VideoTitle}.${format}`);
     const VideoTime = video.duration.seconds;
