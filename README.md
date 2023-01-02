@@ -9,8 +9,8 @@
 - NeedVideo: Quality             | Default: AudioOnly   | Example: 1080p
 
 # How to start
-- Need FFmpeg and Node.js >=17 version
-- Typescript >= 4.9 version
+- Need FFmpeg and Node.js >=17
+- Typescript >= 4.9
 
 1. Build project
    - execute build.bat
