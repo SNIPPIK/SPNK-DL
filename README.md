@@ -1,6 +1,6 @@
 # YouTube-DWL
 - Download any quality video 
-- Video + Audio | Video and audio will be merged together
+- Supported: Video+Audio, OnlyAudio
 - The uploaded video will be saved in build/Audio
 
 # Help for console
