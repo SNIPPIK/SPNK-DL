@@ -61,15 +61,14 @@ export namespace YouTube {
             if (jsonResult.playabilityStatus?.status !== "OK") throw reject(new Error(`Не удалось получить данные из-за: ${jsonResult.playabilityStatus.status}`));
 
             const details = jsonResult.videoDetails;
-            let audios: YouTubeFormat;
+            let audios: YouTubeFormat[];
 
-            if (details.isLiveContent) audios = {url: details.streamingData?.dashManifestUrl ?? null}; //dashManifestUrl, hlsManifestUrl
+            if (details.isLiveContent) audios = [{url: details.streamingData?.dashManifestUrl ?? null}]; //dashManifestUrl, hlsManifestUrl
             else {
                 const html5player = `https://www.youtube.com${page.split('"jsUrl":"')[1].split('"')[0]}`;
                 const allFormats = [...jsonResult.streamingData?.formats ?? [], ...jsonResult.streamingData?.adaptiveFormats ?? []];
-                const FindOpus: YouTubeFormat[] = allFormats.filter((format: YouTubeFormat) => format.mimeType?.match(/opus/) || format?.mimeType?.match(/audio/));
 
-                audios = (await DecipherYt(FindOpus, html5player)).pop();
+                audios = await DecipherYt(allFormats, html5player);
             }
 
             return resolve({...await construct.video(details), format: audios});

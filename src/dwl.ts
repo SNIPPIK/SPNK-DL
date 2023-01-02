@@ -1,109 +1,109 @@
+import {ParsingTimeToNumber, ParsingTimeToString} from "./DurationUtils";
+import {YouTubeFormat} from "./Platforms/YouTube/Decipher";
+import * as process from "process";
+import {Decoding} from "./FFmpeg";
 import {YouTube} from "@APIs";
-import {spawn} from "child_process";
-import * as urls from "@db/Links.json";
+import prompt from "prompt";
 
-start().catch(console.log);
-
-const ErrorLink: string[] = [];
-
-/**
- * @description Начинаем скачивать видео с youtube
- * @param num {number} номер ссылки в списке
- */
-async function start(num = 0): Promise<void> {
-    const url = urls[num];
-
-    if (!url) {
-        if (ErrorLink.length > 0) console.log(`Не удалось скачать эти видео\n${ErrorLink.join("\n")}\n`);
-        return console.log("Ссылки закончились");
+const properties = [
+    {
+        name: 'url',
+        validator: /^(https?:\/\/)?(www\.)?(m\.)?(music\.)?( )?(youtube\.com|youtu\.?be)\/.+$/gi,
+        warning: 'Укажи ссылку на YouTube?!'
+    },
+    {
+        name: 'AudioType',
+    },
+    {
+        name: "NeedVideo",
     }
+];
 
-    const video: any = await gettingInfo(url);
-    num++;
+//
+console.clear();
+console.log(`
+$$\\     $$\\                $$$$$$$$\\        $$\\                       $$$$$$$\\  $$\\      $$\\ $$\\       
+\\$$\\   $$  |               \\__$$  __|       $$ |                      $$  __$$\\ $$ | $\\  $$ |$$ |      
+ \\$$\\ $$  /$$$$$$\\  $$\\   $$\\ $$ |$$\\   $$\\ $$$$$$$\\   $$$$$$\\        $$ |  $$ |$$ |$$$\\ $$ |$$ |      
+  \\$$$$  /$$  __$$\\ $$ |  $$ |$$ |$$ |  $$ |$$  __$$\\ $$  __$$\\       $$ |  $$ |$$ $$ $$\\$$ |$$ |      
+   \\$$  / $$ /  $$ |$$ |  $$ |$$ |$$ |  $$ |$$ |  $$ |$$$$$$$$ |      $$ |  $$ |$$$$  _$$$$ |$$ |      
+    $$ |  $$ |  $$ |$$ |  $$ |$$ |$$ |  $$ |$$ |  $$ |$$   ____|      $$ |  $$ |$$$  / \\$$$ |$$ |      
+    $$ |  \\$$$$$$  |\\$$$$$$  |$$ |\\$$$$$$  |$$$$$$$  |\\$$$$$$$\\       $$$$$$$  |$$  /   \\$$ |$$$$$$$$\\ 
+    \\__|   \\______/  \\______/ \\__| \\______/ \\_______/  \\_______|      \\_______/ \\__/     \\__|\\________|
+                                                                                                       
+                                                                                                       
+                                                                                                     
+`)
 
-    if (!video || !video.format.url) {
-        ErrorLink.push(video.title);
-        return start(num);
-    }
+//
+prompt.start({ message: "Writer" });
+prompt.get(properties, (err: Error, str: any) => runDWL(err, str));
+//
 
-    const ffmpeg = DecodingMP3(video.format.url, video.title);
+const runDWL = async (err: Error, str: any) => {
+    const url = str.url;
+    const VideoQuality = str.NeedVideo || "OnlyAudio";
+    const format = str.AudioType || VideoQuality === "OnlyAudio" ? "mp3" : "mp4";
+
+    // Получаем данные о видео
+    let video: any = await YouTube.getVideo(url);
+
+    if (!video) return Error("Not found info for video");
+    if (!video.format) video = await YouTube.getVideo(url);
+    //
+
+    // Подготавливаем форматы видео и аудио
+    const audios = video.format.filter((format: YouTubeFormat) => format.mimeType?.match(/opus/) || format?.mimeType?.match(/audio/)).sort((format: any) => format.bitrate);
+    const videos = VideoQuality !== "OnlyAudio" ? video.format.filter((format: YouTubeFormat) => format.qualityLabel === `${VideoQuality}60` || format.qualityLabel === VideoQuality) : [];
+    const FFmpegFormats: string[] = [];
+
+    if (videos.length > 0) FFmpegFormats.push(videos[0].url);
+    if (audios.length > 0) FFmpegFormats.push(audios[0].url);
+    //
+    
+    let isDownload = false;
+    const VideoTitle = video.title.replace(/[\[,\]}{"`'|]/gi, "");
+
+    const ffmpeg = Decoding(FFmpegFormats, `${VideoTitle}.${format}`);
     const VideoTime = video.duration.seconds;
+    const VideoTimeString = ParsingTimeToString(VideoTime);
 
     ffmpeg.stderr.on("data", (Buffer) => {
         const info = Buffer.toString();
 
         if (info.match(/time=/)) {
-            const totalDuration: number = ParsingTimeToNumber(info.split("time=")[1].split(".")[0]);
+            const decodingTime = info.split("time=")[1].split(".")[0];
+            const totalDuration: number = ParsingTimeToNumber(decodingTime);
             const sizeFile = info.split("size=")[1].split("kB")[0];
-            const process = totalDuration * 100 / VideoTime;
+            const process = (totalDuration * 100 / VideoTime).toFixed(2);
 
             console.clear();
-            console.log(`${video.title}\nSize: ${sizeFile} kB\n[${progressBar(totalDuration, VideoTime, 50)}] ${process} %`);
+            console.log(`${video.title}\nQuality:  ${VideoQuality}\nDuration: ${decodingTime} / ${VideoTimeString}\nSize: ${sizeFile} kB\nProgress:\n[${progressBar(totalDuration, VideoTime, 50)}] ${process} %`);
+
+            isDownload = true;
         }
     });
 
     ffmpeg.stdout.once("close", () => {
-        console.log(`Has downloaded! Path: Audio/`);
-
-        return setTimeout(() => {
-            console.clear();
-            start(num);
-        }, 3e3);
+        if (!isDownload) Error("Не удалось скачать это видео");
+        else Error(`Конвертация в ${format} прошла успешно, исходный файл находится в Audio/`);
     });
 }
-//====================== ====================== ====================== ======================
-/**
- * @description Получаем ссылку на исходное видео
- * @param url {string} Ссылка на видео
- */
-function gettingInfo(url: string) {
-    return YouTube.getVideo(url).then((video) => {
 
-        if (!video) return null;
-        return video;
-    });
+const Error = (err: string) => {
+    if (err) console.log(err);
+    return process.exit(0);
 }
-//====================== ====================== ====================== ======================
-/**
- * @description Конвертируем получаемый файл в mp3
- * @param path {string} Путь или ссылка
- * @param out {string} Название файла
- * @constructor
- */
-function DecodingMP3(path: string, out: string) {
-    const args = ["-y", "-reconnect", 1, "-reconnect_streamed", 1, "-reconnect_delay_max", 5, "-i", path, `Audio/${out}.mp3`];
-
-    return spawn("ffmpeg", args as any, { shell: false, windowsHide: true });
-}
-//====================== ====================== ====================== ======================
-function progressBar(currentTime: number, maxTime: number, size: number = 15) {
+const progressBar = (currentTime: number, maxTime: number, size: number = 15) => {
     try {
         const CurrentDuration = isNaN(currentTime) ? 0 : currentTime;
         const progressSize = Math.round(size * (CurrentDuration / maxTime));
-        const progressText = "|".repeat(progressSize);
-        const emptyText = "-".repeat(size - progressSize);
+        const progressText = "█".repeat(progressSize);
+        const emptyText = " ".repeat(size - progressSize);
 
         return `${progressText}${emptyText}`;
     } catch (err) {
         if (err === "RangeError: Invalid count value") return "**❯** \`\`[Error value]\`\`";
         return "**❯** \`\`[Loading]\`\`";
-    }
-}
-//
-function ParsingTimeToNumber(duration: string): number {
-    if (typeof duration === "number") return duration;
-
-    const Splitter = duration?.split(":");
-    const days = (duration: string) => Number(duration) * ((60 * 60) * 24);
-    const hours = (duration: string) => Number(duration) * ((60 * 60) * 24);
-    const minutes = (duration: string) => (Number(duration) * 60);
-    const seconds = (duration: string) => Number(duration);
-
-    if (!Splitter?.length) return Number(duration);
-
-    switch (Splitter.length) {
-        case 4: return days(Splitter[0]) + hours(Splitter[1]) + minutes(Splitter[2]) + seconds(Splitter[3]);
-        case 3: return hours(Splitter[0]) + minutes(Splitter[1]) + seconds(Splitter[2]);
-        case 2: return minutes(Splitter[0]) + seconds(Splitter[1]);
     }
 }
