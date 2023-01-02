@@ -1,6 +1,7 @@
 # YouTube-DWL
 - Download any quality video 
 - Video + Audio | Video and audio will be merged together
+- The uploaded video will be saved in build/Audio
 
 # Help for console
 - url: Link to youtube video     | Needed parameter     | Example: https://youtu.be/g_Nf2S6JbOY
