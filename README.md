@@ -13,8 +13,8 @@
 - Typescript >= 4.9 version
 
 1. Build project
-   - run build.bat
+   - execute build.bat
    - or tsc -p tsconfig.json
 2. Running project
-   - run run.bat
+   - execute run.bat
    - or cd build && node -r tsconfig-paths/register src/dwl.js
