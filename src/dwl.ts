@@ -42,7 +42,7 @@ prompt.get(properties, (err: Error, str: any) => runDWL(err, str));
 
 const runDWL = async (err: Error, str: any) => {
     const url = str.url;
-    const VideoQuality = str.NeedVideo ?? "OnlyAudio";
+    const VideoQuality = str.NeedVideo || "OnlyAudio";
     const format = str.AudioType || "mp3";
 
     // Получаем данные о видео
