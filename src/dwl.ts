@@ -4,6 +4,7 @@ import * as process from "process";
 import {Decoding} from "./FFmpeg";
 import {YouTube} from "@APIs";
 import prompt from "prompt";
+import {existsSync, mkdirSync} from "node:fs";
 
 const properties = [
     {
@@ -48,6 +49,8 @@ const runDWL = async (err: Error, str: any) => {
     // Получаем данные о видео
     let video: any = await YouTube.getVideo(url);
 
+    if (!existsSync("Audio")) mkdirSync("Audio");
+
     if (!video) return Error("Не найдена информация о видео");
     if (!video.format) video = await YouTube.getVideo(url);
     //
@@ -59,7 +62,7 @@ const runDWL = async (err: Error, str: any) => {
     let videoFPS = 0; //Счетчик фпс
 
     // Проверяем есть ли такой формат в списке
-    if (videos?.length === 0 && VideoQuality !== "OnlyAudio") return Error("Такого формата видео нет");
+    if (VideoQuality !== "OnlyAudio" && videos?.length) return Error("Такого формата видео нет");
     else if (VideoQuality !== "OnlyAudio") {
         const video = videos[0];
         videoFPS = video.fps;
