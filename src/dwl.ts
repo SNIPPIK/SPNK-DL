@@ -62,7 +62,7 @@ const runDWL = async (err: Error, str: any) => {
     let videoFPS = 0; //Счетчик фпс
 
     // Проверяем есть ли такой формат в списке
-    if (VideoQuality !== "OnlyAudio" && videos?.length) return Error("Такого формата видео нет");
+    if (VideoQuality !== "OnlyAudio" && !videos?.length) return Error("Такого формата видео нет");
     else if (VideoQuality !== "OnlyAudio") {
         const video = videos[0];
         videoFPS = video.fps;
