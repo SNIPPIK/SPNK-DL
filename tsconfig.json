@@ -1,10 +1,5 @@
 {
   "compilerOptions": {
-    "paths": {
-      "@db/*": ["db/*"],
-      "@httpsClient": ["src/httpsClient/index"],
-      "@APIs": ["src/Platforms/index"]
-    },
     "baseUrl": ".",
     // Основные настройки.
     "module": "CommonJS",                 // Определяет тип импорта кода в итоговом файле

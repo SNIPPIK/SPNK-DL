@@ -2,7 +2,7 @@
 
 :Main
 cd build
-node -r tsconfig-paths/register src/dwl.js
+node src/main.js
 pause
 
 
