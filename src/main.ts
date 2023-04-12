@@ -65,7 +65,7 @@ prompt.get(properties, async (err: Error, str: any) => {
     //Создаем ffmpeg
     const ffmpeg = new FFmpeg(
         [
-            ...Args, "-compression_level", "12", "-tune", "fastdecode", `${savePath}\\[${title}].${format}`
+            ...Args, `${savePath}\\[${title}].${format}`
         ],
         { highWaterMark: (1024 * 1024 * 1024) * 1024 }
     );
@@ -90,7 +90,7 @@ prompt.get(properties, async (err: Error, str: any) => {
             const bar = `[${progressBar(totalDuration, VideoTime, 50)}] ${process} %`;
             const Duration = `Duration: ${decodingTime} / ${VideoTimeString}`;
             const Size = `Size:       ${FormatBytes(sizeFile * 1024)}`;
-            const Download = `Download: ${FormatBytes(download * 1024)}`;
+            const Download = `Download: ${FormatBytes(download * 1024)} | ${ParsingTimeToString(VideoTime - totalDuration)}`;
             const space = "-".repeat(65);
 
             console.clear();
