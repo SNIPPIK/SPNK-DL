@@ -67,11 +67,12 @@ prompt.get(properties, async (err: Error, str: any) => {
         [
             ...Args, "-compression_level", "12", "-tune", "fastdecode", `${savePath}\\[${title}].${format}`
         ],
-        { highWaterMark: 1024 }
+        { highWaterMark: (1024 * 1024 * 1024) * 1024 }
     );
 
     const VideoTime = data.duration.seconds;
     const VideoTimeString = ParsingTimeToString(VideoTime);
+    let oldSize = 0;
 
     ffmpeg.stderr.on("data", (Buffer) => {
         const info = Buffer.toString();
@@ -81,15 +82,19 @@ prompt.get(properties, async (err: Error, str: any) => {
             const totalDuration: number = ParsingTimeToNumber(decodingTime);
             const sizeFile = info.split("size=")[1].split("kB")[0];
             const process = (totalDuration * 100 / VideoTime).toFixed(2);
+            const download = oldSize > 0 ? sizeFile - oldSize : 0;
+
+            oldSize = sizeFile;
 
             const dQuality = FPS > 0 ? `Quality:  ${Quality}/${format} | FPS: ${FPS}` : `Quality:  ${Quality}/${format}`;
             const bar = `[${progressBar(totalDuration, VideoTime, 50)}] ${process} %`;
             const Duration = `Duration: ${decodingTime} / ${VideoTimeString}`;
-            const Size = `Size: ${sizeFile} kB`;
+            const Size = `Size:       ${FormatBytes(sizeFile * 1024)}`;
+            const Download = `Download: ${FormatBytes(download * 1024)}`;
             const space = "-".repeat(65);
 
             console.clear();
-            console.log(`┌${space}\n├ ${data.title}\n├ ${dQuality}\n├ ${Duration}\n├ ${Size}\n├ ${bar}\n└${space}`);
+            console.log(`┌${space}\n├ ${data.title}\n├ ${dQuality}\n├ ${Duration}\n├ ${Download}\n├ ${Size}\n├ ${bar}\n└${space}`);
         }
     });
 
@@ -134,9 +139,8 @@ async function SearchFormats(url: string, quality: string) {
 }
 //====================== ====================== ====================== ======================
 /**
- * 
- * @param err 
- * @returns 
+ * @description Выводим ошибку и выключаем процесс
+ * @param err {string} Ошибка
  */
 function Error(err: string) {
     if (err) console.log(err);
@@ -144,11 +148,10 @@ function Error(err: string) {
 }
 //====================== ====================== ====================== ======================
 /**
- * 
- * @param currentTime 
- * @param maxTime 
- * @param size 
- * @returns 
+ * @description Создаем progress bar загрузки видео
+ * @param currentTime {number} Текущее время
+ * @param maxTime {number} Макс время
+ * @param size {number} Размер
  */
 function progressBar(currentTime: number, maxTime: number, size: number = 15) {
     try {
@@ -162,4 +165,15 @@ function progressBar(currentTime: number, maxTime: number, size: number = 15) {
         if (err === "RangeError: Invalid count value") return "**❯** \`\`[Error value]\`\`";
         return "**❯** \`\`[Loading]\`\`";
     }
+}
+//====================== ====================== ====================== ======================
+/**
+ * @description Получаем размер файла
+ * @param bytes {number} Кол-во байт
+ */
+function FormatBytes(bytes: number) {
+    if (bytes === 0) return '0 Bytes';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${parseFloat((bytes / Math.pow(1024, i)).toFixed(2))} ${sizes[i]}`
 }
