@@ -55,7 +55,7 @@ prompt.get(properties, async (err: Error, str: any) => {
     //Если есть аудио, то добавляем его
     if (audios.length > 0) FFmpegFormats.push(audios[0].url);
 
-    const title = data.title.replace(/[\[,\]}{"`'|*/]/gi, "");
+    const title = data.title.replace(/[|,'";*/\\{}!?.:<>]/gi, "");
     const Args = ["-y"];
 
     //Добавляем аргументы для ffmpeg'a
@@ -142,9 +142,11 @@ async function SearchFormats(url: string, quality: string) {
  * @description Выводим ошибку и выключаем процесс
  * @param err {string} Ошибка
  */
-function Error(err: string) {
+function Error(err: string): any {
     if (err) console.log(err);
-    return process.exit(0);
+    setTimeout(() => {
+        process.exit(0);
+    }, 10e3);
 }
 //====================== ====================== ====================== ======================
 /**
