@@ -73,7 +73,12 @@ class spnkDL {
                 const index = result.number;
                 this.format = result.format;
 
-                if (videos[index]) return resolve([videos[index].url, audios.at(0).url]);
+                if (videos[index]) {
+                    if (!this.format) this.format = "mp4";
+                    return resolve([videos[index].url, audios.at(0).url]);
+                }
+
+                if (!this.format) this.format = "mp3";
                 return resolve([audios.at(0).url]);
             });
         });
