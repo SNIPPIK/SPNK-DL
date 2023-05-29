@@ -155,8 +155,8 @@ function progressBar(currentTime: number, maxTime: number, size: number = 15) {
 
         return `${progressText}${emptyText}`;
     } catch (err) {
-        if (err === "RangeError: Invalid count value") return "**❯** \`\`[Error value]\`\`";
-        return "**❯** \`\`[Loading]\`\`";
+        if (err === "RangeError: Invalid count value") return "Error value";
+        return "Loading...";
     }
 }
 //====================== ====================== ====================== ======================
