@@ -81,6 +81,9 @@ class spnkDL {
 
     private set download(paths: string[]) {
         const Args = ["-y"];
+        const VideoFormat = paths.length > 1 ? (this.video.format as YouTubeFormat[]).find((format) => format.url === paths[0]) : {fps: 0, quality: "Audio"};
+        // @ts-ignore
+        const parsedQuality = Quality[VideoFormat.quality] ?? VideoFormat.quality;
 
         //Добавляем аргументы для ffmpeg'a
         if (paths.length > 0) paths.forEach((url) => Args.push("-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5", "-i", url));
@@ -89,13 +92,12 @@ class spnkDL {
         //Создаем ffmpeg
         const ffmpeg = new FFmpeg(
             [
-                ...Args, `${this.path}\\[${this.title}].${this.format}`
+                ...Args, `${this.path}\\[${parsedQuality}] ${this.title}.${this.format}`
             ],
             { highWaterMark: (1024 * 1024 * 1024) * 1024 }
         );
 
 
-        const VideoFormat = paths.length > 1 ? (this.video.format as YouTubeFormat[]).find((format) => format.url === paths[0]) : {fps: 0, quality: "Audio"};
 
         const VideoTime = this.video.duration.seconds;
         const VideoTimeString = ParsingTimeToString(VideoTime);
@@ -113,14 +115,12 @@ class spnkDL {
 
                 oldSize = sizeFile;
 
-                // @ts-ignore
-                const parsedQuality = Quality[VideoFormat.quality] ?? VideoFormat.quality;
                 const dQuality = VideoFormat.fps > 0 ? `Quality:  ${parsedQuality}/${this.format} | FPS: ${VideoFormat.fps}` : `Quality:  ${parsedQuality}/${this.format}`;
                 const bar = `[${progressBar(totalDuration, VideoTime, 50)}] ${process} %`;
                 const Duration = `Duration: ${decodingTime} / ${VideoTimeString}`;
                 const Size = `Size:       ${FormatBytes(sizeFile * 1024)}`;
                 const Download = `Download: ${FormatBytes(download * 1024)} | ${ParsingTimeToString(VideoTime - totalDuration)}`;
-                const space = "-".repeat(65);
+                const space = "─".repeat(65);
 
                 console.clear();
                 console.log(`┌${space}\n├ ${this.title}\n├ ${dQuality}\n├ ${Duration}\n├ ${Download}\n├ ${Size}\n├ ${bar}\n└${space}`);
