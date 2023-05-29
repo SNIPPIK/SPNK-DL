@@ -108,6 +108,6 @@ function getID(url: string, isPlaylist: boolean = false): string {
 
         if (parsedLink.searchParams.get("list") && isPlaylist) return parsedLink.searchParams.get("list");
         else if (parsedLink.searchParams.get("v") && !isPlaylist) return parsedLink.searchParams.get("v");
-        return parsedLink.pathname.split("/")[1];
+        return parsedLink.pathname.split("/").pop();
     } catch (err) { return null; }
 }

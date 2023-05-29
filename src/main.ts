@@ -1,10 +1,21 @@
-import { ParsingTimeToNumber, ParsingTimeToString } from "./Structures/Duration";
-import { YouTubeFormat } from "./Structures/YouTube/Decipher";
-import { YouTube } from "./Structures/YouTube/YouTube";
-import { FFmpeg } from "./Structures/FFmpeg";
+import {ParsingTimeToNumber, ParsingTimeToString} from "./Structures/Duration";
+import {YouTubeFormat} from "./Structures/YouTube/Decipher";
+import {YouTube} from "./Structures/YouTube/YouTube";
+import {FFmpeg} from "./Structures/FFmpeg";
 import prompt from "prompt";
 import os from "os";
-import fs from "fs";
+import * as process from "process";
+
+const Quality = {
+    "hd2160": "4К",
+    "hd1440": "2К",
+    "hd1080": "1080p",
+    "hd720": "720p",
+    "large": "480p",
+    "medium": "360p",
+    "small": "240p",
+    "tiny": "144p",
+};
 
 //Logs
 console.clear();
@@ -17,137 +28,117 @@ console.log(`
  |_____/|_|    |_| \\_|_|\\_\\    |_____/|______| 
 `);
 
-const savePath = `${os.homedir()}\\Downloads\\SPNK`;
-const properties = [
-    {
-        name: 'url',
-        validator: /^(https?:\/\/)?(www\.)?(m\.)?(music\.)?( )?(youtube\.com|youtu\.?be)\/.+$/gi,
-        warning: 'Укажи ссылку на YouTube?!'
-    },
-    {
-        name: 'format'
-    },
-    {
-        name: "quality",
-    }
-];
+class spnkDL {
+    private readonly path = `${os.homedir()}\\Downloads\\SPNK`;
+    private video: any = null;
+    private format: string
 
-//====================== ====================== ====================== ======================
-prompt.start({ message: "SPNK-log" });
-prompt.get(properties, async (err: Error, str: any) => {
-    const url = str.url;
-    const Quality = str.quality || "OnlyAudio";
-    const format = str.format || "mp3"
-    const FFmpegFormats: string[] = [];
-    let FPS = 0; //Счетчик фпс
-
-    //Получаем видео и аудио
-    const { videos, audios, data } = await SearchFormats(url, Quality);
-
-    //Если указано другое качество видео и его нет то сообщаем
-    if (Quality !== "OnlyAudio" && !videos?.length) return Error("[CODE: 20] Не удалось получить исходные файлы видео!");
-    else if (Quality !== "OnlyAudio") {
-        const video = videos[0];
-        FPS = video.fps;
-        FFmpegFormats.push(video.url);
-    }
-
-    //Если есть аудио, то добавляем его
-    if (audios.length > 0) FFmpegFormats.push(audios[0].url);
-
-    const title = data.title.replace(/[|,'";*/\\{}!?.:<>]/gi, "");
-    const Args = ["-y"];
-
-    //Добавляем аргументы для ffmpeg'a
-    if (FFmpegFormats.length > 0) FFmpegFormats.forEach((url) => Args.push("-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5", "-i", url));
-    if (FFmpegFormats.length > 1) Args.push("-c:v", "copy");
-
-    //Создаем ffmpeg
-    const ffmpeg = new FFmpeg(
-        [
-            ...Args, `${savePath}\\[${title}].${format}`
-        ],
-        { highWaterMark: (1024 * 1024 * 1024) * 1024 }
-    );
-
-    const VideoTime = data.duration.seconds;
-    const VideoTimeString = ParsingTimeToString(VideoTime);
-    let oldSize = 0;
-
-    ffmpeg.stderr.on("data", (Buffer) => {
-        const info = Buffer.toString();
-
-        if (info.match(/time=/)) {
-            const decodingTime = info.split("time=")[1].split(".")[0];
-            const totalDuration: number = ParsingTimeToNumber(decodingTime);
-            const sizeFile = info.split("size=")[1].split("kB")[0];
-            const process = (totalDuration * 100 / VideoTime).toFixed(2);
-            const download = oldSize > 0 ? sizeFile - oldSize : 0;
-
-            oldSize = sizeFile;
-
-            const dQuality = FPS > 0 ? `Quality:  ${Quality}/${format} | FPS: ${FPS}` : `Quality:  ${Quality}/${format}`;
-            const bar = `[${progressBar(totalDuration, VideoTime, 50)}] ${process} %`;
-            const Duration = `Duration: ${decodingTime} / ${VideoTimeString}`;
-            const Size = `Size:       ${FormatBytes(sizeFile * 1024)}`;
-            const Download = `Download: ${FormatBytes(download * 1024)} | ${ParsingTimeToString(VideoTime - totalDuration)}`;
-            const space = "-".repeat(65);
-
-            console.clear();
-            console.log(`┌${space}\n├ ${data.title}\n├ ${dQuality}\n├ ${Duration}\n├ ${Download}\n├ ${Size}\n├ ${bar}\n└${space}`);
-        }
-    });
-
-    ffmpeg.stdout.once("close", () => {
-        Error(`[CODE: 0] Файл находится в ${savePath}`);
-    });
-
-
-    ffmpeg.on("error", (err) => {
-        Error(`[CODE: 202] ${err}`);
-    });
-});
-//====================== ====================== ====================== ======================
-/**
- * @description Ищем видео и аудио
- * @param url {string} ССылка на видео
- * @param quality {string} Качество видео
- * @returns 
- */
-async function SearchFormats(url: string, quality: string) {
-    let videos;
-
-    // Получаем данные о видео
-    const Video: any = await YouTube.getVideo(url);
-
-    if (!fs.existsSync(savePath)) fs.mkdirSync(savePath);
-
-    if (!Video) return Error("[CODE: 19] Не удалось получить данные этого видео!");
-
-    //Ищем аудио дорожку
-    const audios = Video.format.filter((format: YouTubeFormat) => format.mimeType?.match(/opus/) || format?.mimeType?.match(/audio/)).sort((format: any) => format.bitrate);
-
-    //Если пользователь указал другое качество
-    if (quality !== "OnlyAudio") {
-        videos = Video.format.filter((format: YouTubeFormat) => format.qualityLabel === `${quality}60` || format.qualityLabel === quality);
-    }
-
-    //Удаляем видео и аудио дорожки
-    delete Video.format;
-
-    return { videos, audios, data: Video };
-}
-//====================== ====================== ====================== ======================
-/**
- * @description Выводим ошибку и выключаем процесс
- * @param err {string} Ошибка
- */
-function Error(err: string): any {
-    if (err) console.log(err);
-    setTimeout(() => {
+    private set exitCode(message: string) {
+        console.log(message);
         process.exit(0);
-    }, 10e3);
+    };
+
+    private get title() { return this.video.title.replace(/[|,'";*/\\{}!?.:<>]/gi, ""); };
+
+    private get prompt() {
+        prompt.start({ message: "SPNK" });
+        return prompt.get
+    };
+
+    public set setupVideo(bool: boolean) {
+        this.prompt([{name: "url"}], async (err: Error, result: any) => {
+            this.video = await YouTube.getVideo(result.url);
+
+            if (!this.video) return this.exitCode = "Not found video";
+
+            this.download = await this.choiceQuality
+        });
+    };
+
+    private get choiceQuality(): Promise<string[]> {
+        return new Promise<string[]>((resolve) => {
+            const videos: YouTubeFormat[] = this.video.format.filter((format: YouTubeFormat) => format.mimeType.match(/video/));
+            const audios: YouTubeFormat[] = this.video.format.filter((format: YouTubeFormat) => format.mimeType.match(/audio/));
+
+            console.log(`Title: ${this.video.title} | ${this.video.url}\n\nAll video formats:`);
+            for (let index in videos) {
+                // @ts-ignore
+                let quality = Quality[videos[index].quality] ?? videos[index].quality;
+
+                console.log(`   [${index}]: [${quality} | ${videos[index].fps}]: [${videos[index].mimeType}]`);
+            }
+            console.log(`Other\n   [${videos.length++}]: [AudioOnly]\n`);
+
+            this.prompt([{name: "number"}, {name: "format"}], async (err: Error, result: any) => {
+                const index = result.number;
+                this.format = result.format;
+
+                if (videos[index]) return resolve([videos[index].url, audios.at(0).url]);
+                return resolve([audios.at(0).url]);
+            });
+        });
+    };
+
+    private set download(paths: string[]) {
+        const Args = ["-y"];
+
+        //Добавляем аргументы для ffmpeg'a
+        if (paths.length > 0) paths.forEach((url) => Args.push("-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5", "-i", url));
+        if (paths.length > 1) Args.push("-c:v", "copy");
+
+        //Создаем ffmpeg
+        const ffmpeg = new FFmpeg(
+            [
+                ...Args, `${this.path}\\[${this.title}].${this.format}`
+            ],
+            { highWaterMark: (1024 * 1024 * 1024) * 1024 }
+        );
+
+
+        const VideoFormat = paths.length > 1 ? (this.video.format as YouTubeFormat[]).find((format) => format.url === paths[0]) : {fps: 0, quality: "Audio"};
+
+        const VideoTime = this.video.duration.seconds;
+        const VideoTimeString = ParsingTimeToString(VideoTime);
+        let oldSize = 0;
+
+        ffmpeg.stderr.on("data", (Buffer) => {
+            const info = Buffer.toString();
+
+            if (info.match(/time=/)) {
+                const decodingTime = info.split("time=")[1].split(".")[0];
+                const totalDuration: number = ParsingTimeToNumber(decodingTime);
+                const sizeFile = info.split("size=")[1].split("kB")[0];
+                const process = (totalDuration * 100 / VideoTime).toFixed(2);
+                const download = oldSize > 0 ? sizeFile - oldSize : 0;
+
+                oldSize = sizeFile;
+
+                // @ts-ignore
+                const parsedQuality = Quality[VideoFormat.quality] ?? VideoFormat.quality;
+                const dQuality = VideoFormat.fps > 0 ? `Quality:  ${parsedQuality}/${this.format} | FPS: ${VideoFormat.fps}` : `Quality:  ${parsedQuality}/${this.format}`;
+                const bar = `[${progressBar(totalDuration, VideoTime, 50)}] ${process} %`;
+                const Duration = `Duration: ${decodingTime} / ${VideoTimeString}`;
+                const Size = `Size:       ${FormatBytes(sizeFile * 1024)}`;
+                const Download = `Download: ${FormatBytes(download * 1024)} | ${ParsingTimeToString(VideoTime - totalDuration)}`;
+                const space = "-".repeat(65);
+
+                console.clear();
+                console.log(`┌${space}\n├ ${this.title}\n├ ${dQuality}\n├ ${Duration}\n├ ${Download}\n├ ${Size}\n├ ${bar}\n└${space}`);
+            }
+        });
+
+        ffmpeg.stdout.once("close", () => {
+            Error(`[CODE: 0] Файл находится в ${this.path}`);
+        });
+
+
+        ffmpeg.on("error", (err) => {
+            Error(`[CODE: 202] ${err}`);
+        });
+    }
 }
+
+new spnkDL().setupVideo = true;
 //====================== ====================== ====================== ======================
 /**
  * @description Создаем progress bar загрузки видео

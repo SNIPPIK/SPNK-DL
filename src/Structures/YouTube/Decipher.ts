@@ -17,6 +17,8 @@ export interface YouTubeFormat {
     mimeType?: string;
     bitrate?: number;
     qualityLabel?: string;
+    quality?: string;
+    fps?: number;
 }
 
 //====================== ====================== ====================== ======================
