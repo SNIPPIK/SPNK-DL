@@ -3,7 +3,7 @@
   "main": "src/main.js",
   "type": "commonjs",
   "author": "SNIPPIK",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "scripts": {
     "build": "tsc --watch -p ./tsconfig.json",
     "start": "cd build && node src/main.js",
