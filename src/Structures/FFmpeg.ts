@@ -1,5 +1,6 @@
 import { ChildProcessWithoutNullStreams, spawn, spawnSync } from "child_process";
 import { Duplex, DuplexOptions, Readable, Writable } from "stream";
+import * as process from "process";
 
 export class FFmpeg extends Duplex {
     /**
@@ -91,9 +92,6 @@ const paths = { ffmpeg: ["ffmpeg", "avconv"] };
 let FFmpegName: string;
 
 if (!FFmpegName) {
-    //@ts-ignore
-    try { if (dependencies["ffmpeg-static"]) paths.ffmpeg.push(require("ffmpeg-static")); } catch (e) {/* Null */ }
-
     FFmpegName = checkName(paths.ffmpeg, "FFmpeg not found! Your need to install ffmpeg!");
     delete paths.ffmpeg;
 }
@@ -109,5 +107,10 @@ function checkName(names: string[], error: string) {
         if (process.error) continue;
         return name;
     }
-    console.log(error);
+    setTimeout(() => {
+        console.clear();
+        console.log(`Not found ffmpeg in your system. Need install!!!\nLink: https://ffmpeg.org/download.html\nGuide: find in youtube | Install ffmpeg`);
+
+        setTimeout(() => process.exit(0), 15e3);
+    }, 2e3);
 }

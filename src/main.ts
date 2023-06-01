@@ -4,7 +4,7 @@ import {YouTube} from "./Structures/YouTube/YouTube";
 import {FFmpeg} from "./Structures/FFmpeg";
 import prompt from "prompt";
 import os from "os";
-import * as process from "process";
+import * as fs from "fs";
 
 const Quality = {
     "hd2160": "4К",
@@ -133,12 +133,19 @@ class spnkDL {
         });
 
         ffmpeg.stdout.once("close", () => {
-            Error(`[CODE: 0] Файл находится в ${this.path}`);
+            if (fs.existsSync(`${this.path}\\${this.title}.${this.format}`)) this.exitCode =`[CODE: 0] Файл находится в ${this.path}`;
+            else this.exitCode =`[CODE: 102] Что-то пошло не по плану!`;
+
+            //Добавляем задержку в 5 сек
+            setTimeout(() => 5e3);
         });
 
 
-        ffmpeg.on("error", (err) => {
-            Error(`[CODE: 202] ${err}`);
+        ffmpeg.once("error", (err) => {
+            this.exitCode = `[CODE: 202] ${err}`;
+
+            //Добавляем задержку в 5 сек
+            setTimeout(() => 5e3);
         });
     }
 }
