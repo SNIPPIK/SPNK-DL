@@ -35,7 +35,7 @@ class spnkDL {
 
     private set exitCode(message: string) {
         console.log(message);
-        process.exit(0);
+        setTimeout(() =>  process.exit(0), 5e3);
     };
 
     private get title() { return this.video.title.replace(/[|,'";*/\\{}!?.:<>]/gi, ""); };
@@ -89,6 +89,7 @@ class spnkDL {
         const VideoFormat = paths.length > 1 ? (this.video.format as YouTubeFormat[]).find((format) => format.url === paths[0]) : {fps: 0, quality: "Audio"};
         // @ts-ignore
         const parsedQuality = Quality[VideoFormat.quality] ?? VideoFormat.quality;
+        const file = `${this.path}\\[${parsedQuality}] ${this.title}.${this.format}`;
 
         //Добавляем аргументы для ffmpeg'a
         if (paths.length > 0) paths.forEach((url) => Args.push("-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5", "-i", url));
@@ -97,7 +98,7 @@ class spnkDL {
         //Создаем ffmpeg
         const ffmpeg = new FFmpeg(
             [
-                ...Args, `${this.path}\\[${parsedQuality}] ${this.title}.${this.format}`
+                ...Args, `${file}`
             ],
             { highWaterMark: (1024 * 1024 * 1024) * 1024 }
         );
@@ -133,19 +134,13 @@ class spnkDL {
         });
 
         ffmpeg.stdout.once("close", () => {
-            if (fs.existsSync(`${this.path}\\${this.title}.${this.format}`)) this.exitCode =`[CODE: 0] Файл находится в ${this.path}`;
-            else this.exitCode =`[CODE: 102] Что-то пошло не по плану!`;
-
-            //Добавляем задержку в 5 сек
-            setTimeout(() => 5e3);
+            if (fs.existsSync(`${file}`)) this.exitCode =`[CODE: 0] полный путь --> ${file}`;
+            else this.exitCode =`[CODE: 102] Файл не был сохранен, произошла ошибка!`;
         });
 
 
         ffmpeg.once("error", (err) => {
             this.exitCode = `[CODE: 202] ${err}`;
-
-            //Добавляем задержку в 5 сек
-            setTimeout(() => 5e3);
         });
     }
 }
